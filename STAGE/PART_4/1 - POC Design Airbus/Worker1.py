@@ -130,7 +130,7 @@ class Worker1(QThread):
 
     def run(self):
         self.ThreadActive = True
-        Predictor = dlib.shape_predictor(r"C:\Users\ahmed\Desktop\Supcom\stage ingenieur\distraction_detector\STAGE\PART_4\1 - POC Design Airbus\Face_Landmarks.dat")
+        Predictor = dlib.shape_predictor(r"STAGE\dlib_shape_predictor\shape_predictor_68_face_landmarks.dat")
         # visualisation parameters
         show_eye_proc = False
         show_axis = True

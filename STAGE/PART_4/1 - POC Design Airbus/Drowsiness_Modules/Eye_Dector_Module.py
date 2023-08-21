@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 from numpy import linalg as LA
-from Utils import resize
 #from Drowsiness_Modules.Utils import resize
+from Drowsiness_Modules.Utils import resize
 
 
 class EyeDetector:
@@ -28,6 +28,67 @@ class EyeDetector:
         self.frame = None
         self.show_processing = show_processing
         self.eye_width = None
+
+    def get_EAR(self, frame, landmarks):
+        """
+        Computes the average eye aperture rate of the face
+
+        Parameters
+        ----------
+        frame: numpy array
+            Frame/image in which the eyes keypoints are found
+        landmarks: list
+            List of 68 dlib keypoints of the face
+
+        Returns
+        -------- 
+        ear_score: float
+            EAR average score between the two eyes
+            The EAR or Eye Aspect Ratio is computed as the eye opennes divided by the eye lenght
+            Each eye has his scores and the two scores are averaged
+        """
+
+        self.keypoints = landmarks
+        self.frame = frame
+        pts = self.keypoints
+
+        i = 0  # auxiliary counter
+        # numpy array for storing the keypoints positions of the left eye
+        eye_pts_l = np.zeros(shape=(6, 2))
+        # numpy array for storing the keypoints positions of the right eye
+        eye_pts_r = np.zeros(shape=(6, 2))
+
+        for n in range(36, 42):  # the dlib keypoints from 36 to 42 are referring to the left eye
+            point_l = pts.part(n)  # save the i-keypoint of the left eye
+            point_r = pts.part(n + 6)  # save the i-keypoint of the right eye
+            # array of x,y coordinates for the left eye reference point
+            eye_pts_l[i] = [point_l.x, point_l.y]
+            # array of x,y coordinates for the right eye reference point
+            eye_pts_r[i] = [point_r.x, point_r.y]
+            i += 1  # increasing the auxiliary counter
+
+        def EAR_eye(eye_pts):
+            """
+            Computer the EAR score for a single eyes given it's keypoints
+            :param eye_pts: numpy array of shape (6,2) containing the keypoints of an eye considering the dlib ordering
+            :return: ear_eye
+                EAR of the eye
+            """
+            ear_eye = (LA.norm(eye_pts[1] - eye_pts[5]) + LA.norm(
+                eye_pts[2] - eye_pts[4])) / (2 * LA.norm(eye_pts[0] - eye_pts[3]))
+            '''
+            EAR is computed as the mean of two measures of eye opening (see dlib face keypoints for the eye)
+            divided by the eye lenght
+            '''
+            return ear_eye
+
+        ear_left = EAR_eye(eye_pts_l)  # computing the left eye EAR score
+        ear_right = EAR_eye(eye_pts_r)  # computing the right eye EAR score
+
+        # computing the average EAR score
+        ear_avg = (ear_left + ear_right) / 2
+
+        return ear_avg
 
     def show_eye_keypoints(self, color_frame, landmarks):
         """
@@ -84,8 +145,8 @@ class EyeDetector:
             #rgb_image = apply_data_augmentation(rgb_image)
             return rgb_image
         def extract_eyes_from_landmarks(frame, landmarks):
-            if len(landmarks) != 68:
-                raise ValueError("Facial landmarks should contain 68 points.")
+            #if len(landmarks) != 68:
+            #   raise ValueError("Facial landmarks should contain 68 points.")
 
             # Define the indices for the left and right eyes based on facial landmarks.
             left_eye_indices = [i for i in range(36, 42)]
@@ -131,7 +192,7 @@ class EyeDetector:
 
 
 
-        eyes = extract_eyes_from_landmarks(frame, landmarks[0])  # Considering the first detected face
+        eyes = extract_eyes_from_landmarks(frame, landmarks)  # Considering the first detected face
         left_eye_roi, right_eye_roi = eyes[0], eyes[1]
         preprocessed_left_eye_roi = preprocess(left_eye_roi,img_size=100)
         preprocessed_right_eye_roi = preprocess(right_eye_roi,img_size=100)
