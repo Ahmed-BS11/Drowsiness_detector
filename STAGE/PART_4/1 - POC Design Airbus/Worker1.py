@@ -10,7 +10,10 @@ from Drowsiness_Modules.Eye_Dector_Module import EyeDetector as EyeDet
 from Drowsiness_Modules.Attention_Scorer_Module import AttentionScorer as AttScorer
 from Drowsiness_Modules.Pose_Estimation_Module import HeadPoseEstimator as HeadPoseEst
 from imutils import face_utils
+from keras.models import load_model  # Assuming you trained your model using TensorFlow
 
+eye_state_model = load_model('STAGE\PART_2\my_model.keras', compile=False)
+eye_state_model.compile(loss="binary_crossentropy", optimizer = "adam", metrics = ["accuracy"])
 class Worker1(QThread):
     ImageUpdate = pyqtSignal(QImage)
     def __init__(self):
@@ -76,7 +79,9 @@ class Worker1(QThread):
 
             # compute the EAR score of the eyes
             ear = Eye_det.get_EAR(frame=gray, landmarks=landmarks)
-
+            state=EyeDet.get_eye_state(self, frame, landmarks,eye_state_model)[0]
+            r_p=EyeDet.get_eye_state(self, frame, landmarks,eye_state_model)[1][0]
+            l_p=EyeDet.get_eye_state(self, frame, landmarks,eye_state_model)[1][1]
             # compute the PERCLOS score and state of tiredness
             _, perclos_score = Scorer.get_PERCLOS(ear)
 
@@ -95,9 +100,10 @@ class Worker1(QThread):
 
             # show the real-time EAR score
             if ear is not None:
-                cv2.putText(frame, "EAR:" + str(round(ear, 3)), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+                cv2.putText(frame, "left eye proba:" + str(round(l_p, 3)), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+                cv2.putText(frame, "right eye proba:" + str(round(r_p, 3)), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
                 
-            if (ear < 0.2):
+            if (state=='closed'):
                 self.counter_closed+=1
                 self.counter_open=0
                 if self.counter_closed > 50 :

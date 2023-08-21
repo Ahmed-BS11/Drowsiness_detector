@@ -3,7 +3,6 @@ import numpy as np
 from numpy import linalg as LA
 from Utils import resize
 #from Drowsiness_Modules.Utils import resize
-from keras.models import load_model  # Assuming you trained your model using TensorFlow
 
 
 class EyeDetector:
@@ -50,10 +49,8 @@ class EyeDetector:
             y = self.keypoints.part(n).y
             cv2.circle(color_frame, (x, y), 1, (0, 0, 255), -1)
         return
-    eye_state_model = load_model('STAGE\PART_2\my_model.keras', compile=False)
-    eye_state_model.compile(loss="binary_crossentropy", optimizer = "adam", metrics = ["accuracy"])
     
-    def get_eye_state(self, frame, landmarks,eye_state_model,preprocess):
+    def get_eye_state(self, frame, landmarks,eye_state_model):
         self.keypoints = landmarks
         self.frame = frame
         pts = self.keypoints
@@ -86,23 +83,56 @@ class EyeDetector:
             rgb_image = cv2.cvtColor(padded_image, cv2.COLOR_GRAY2RGB)
             #rgb_image = apply_data_augmentation(rgb_image)
             return rgb_image
+        def extract_eyes_from_landmarks(frame, landmarks):
+            if len(landmarks) != 68:
+                raise ValueError("Facial landmarks should contain 68 points.")
+
+            # Define the indices for the left and right eyes based on facial landmarks.
+            left_eye_indices = [i for i in range(36, 42)]
+            right_eye_indices = [i for i in range(42, 48)]
+
+            # Extract left and right eye regions from the frame.
+            left_eye_coords = np.array([landmarks[i] for i in left_eye_indices], dtype=np.int32)
+            right_eye_coords = np.array([landmarks[i] for i in right_eye_indices], dtype=np.int32)
+
+            # Calculate the bounding boxes for the left and right eye regions.
+            left_eye_x = np.min(left_eye_coords[:, 0])
+            left_eye_y = np.min(left_eye_coords[:, 1])
+            left_eye_w = np.max(left_eye_coords[:, 0]) - left_eye_x
+            left_eye_h = np.max(left_eye_coords[:, 1]) - left_eye_y
+
+            right_eye_x = np.min(right_eye_coords[:, 0])
+            right_eye_y = np.min(right_eye_coords[:, 1])
+            right_eye_w = np.max(right_eye_coords[:, 0]) - right_eye_x
+            right_eye_h = np.max(right_eye_coords[:, 1]) - right_eye_y
+
+            # Extend the cropping region to include the eyebrow area
+            extended_eye_crop = 10
+            left_eye_x -= extended_eye_crop
+            left_eye_y -= extended_eye_crop
+            left_eye_w += 2 * extended_eye_crop
+            left_eye_h += 2 * extended_eye_crop
+
+            right_eye_x -= extended_eye_crop
+            right_eye_y -= extended_eye_crop
+            right_eye_w += 2 * extended_eye_crop
+            right_eye_h += 2 * extended_eye_crop
+
+            # Crop the eye regions from the frame.
+            left_eye_region = frame[left_eye_y:left_eye_y+left_eye_h, left_eye_x:left_eye_x+left_eye_w]
+            right_eye_region = frame[right_eye_y:right_eye_y+right_eye_h, right_eye_x:right_eye_x+right_eye_w]
+
+            # Convert the eye regions to grayscale.
+            left_eye_gray = cv2.cvtColor(left_eye_region, cv2.COLOR_BGR2GRAY)
+            right_eye_gray = cv2.cvtColor(right_eye_region, cv2.COLOR_BGR2GRAY)
+
+            return [left_eye_gray, right_eye_gray]
 
 
 
-        # Get the eye regions (ROI) using keypoints similar to the original code
-        left_eye_roi = np.zeros(shape=(6, 2))
-        # numpy array for storing the keypoints positions of the right eye
-        right_eye_roi = np.zeros(shape=(6, 2))
 
-        for n in range(36, 42):  # the dlib keypoints from 36 to 42 are referring to the left eye
-            point_l = pts.part(n)  # save the i-keypoint of the left eye
-            point_r = pts.part(n + 6)  # save the i-keypoint of the right eye
-            # array of x,y coordinates for the left eye reference point
-            left_eye_roi[i] = [point_l.x, point_l.y]
-            # array of x,y coordinates for the right eye reference point
-            right_eye_roi[i] = [point_r.x, point_r.y]
-            i += 1  # increasing the auxiliary counter
-        # Assuming you have a function to preprocess the ROIs similar to how your model was trained
+        eyes = extract_eyes_from_landmarks(frame, landmarks[0])  # Considering the first detected face
+        left_eye_roi, right_eye_roi = eyes[0], eyes[1]
         preprocessed_left_eye_roi = preprocess(left_eye_roi,img_size=100)
         preprocessed_right_eye_roi = preprocess(right_eye_roi,img_size=100)
 
@@ -116,70 +146,9 @@ class EyeDetector:
         else:
             eye_state = 'closed'
 
-        return eye_state
+        return eye_state,[left_eye_prediction,right_eye_prediction]
          
     
-    def get_EAR(self, frame, landmarks):
-        """
-        Computes the average eye aperture rate of the face
-
-        Parameters
-        ----------
-        frame: numpy array
-            Frame/image in which the eyes keypoints are found
-        landmarks: list
-            List of 68 dlib keypoints of the face
-
-        Returns
-        -------- 
-        ear_score: float
-            EAR average score between the two eyes
-            The EAR or Eye Aspect Ratio is computed as the eye opennes divided by the eye lenght
-            Each eye has his scores and the two scores are averaged
-        """
-
-        self.keypoints = landmarks
-        self.frame = frame
-        pts = self.keypoints
-
-        i = 0  # auxiliary counter
-        # numpy array for storing the keypoints positions of the left eye
-        eye_pts_l = np.zeros(shape=(6, 2))
-        # numpy array for storing the keypoints positions of the right eye
-        eye_pts_r = np.zeros(shape=(6, 2))
-
-        for n in range(36, 42):  # the dlib keypoints from 36 to 42 are referring to the left eye
-            point_l = pts.part(n)  # save the i-keypoint of the left eye
-            point_r = pts.part(n + 6)  # save the i-keypoint of the right eye
-            # array of x,y coordinates for the left eye reference point
-            eye_pts_l[i] = [point_l.x, point_l.y]
-            # array of x,y coordinates for the right eye reference point
-            eye_pts_r[i] = [point_r.x, point_r.y]
-            i += 1  # increasing the auxiliary counter
-
-        def EAR_eye(eye_pts):
-            """
-            Computer the EAR score for a single eyes given it's keypoints
-            :param eye_pts: numpy array of shape (6,2) containing the keypoints of an eye considering the dlib ordering
-            :return: ear_eye
-                EAR of the eye
-            """
-            ear_eye = (LA.norm(eye_pts[1] - eye_pts[5]) + LA.norm(
-                eye_pts[2] - eye_pts[4])) / (2 * LA.norm(eye_pts[0] - eye_pts[3]))
-            '''
-            EAR is computed as the mean of two measures of eye opening (see dlib face keypoints for the eye)
-            divided by the eye lenght
-            '''
-            return ear_eye
-
-        ear_left = EAR_eye(eye_pts_l)  # computing the left eye EAR score
-        ear_right = EAR_eye(eye_pts_r)  # computing the right eye EAR score
-
-        # computing the average EAR score
-        ear_avg = (ear_left + ear_right) / 2
-
-        return ear_avg
-
     def get_Gaze_Score(self, frame, landmarks):
         """
         Computes the average Gaze Score for the eyes
