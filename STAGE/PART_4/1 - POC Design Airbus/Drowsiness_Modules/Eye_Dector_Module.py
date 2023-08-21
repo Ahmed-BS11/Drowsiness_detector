@@ -1,8 +1,8 @@
 import cv2
 import numpy as np
 from numpy import linalg as LA
-#from Utils import resize
-from Drowsiness_Modules.Utils import resize
+from Utils import resize
+#from Drowsiness_Modules.Utils import resize
 from keras.models import load_model  # Assuming you trained your model using TensorFlow
 
 
@@ -50,43 +50,58 @@ class EyeDetector:
             y = self.keypoints.part(n).y
             cv2.circle(color_frame, (x, y), 1, (0, 0, 255), -1)
         return
-    eye_state_model = load_model(r'STAGE\PART_2\my_model.keras')
-    def preprocess(frame,img_size=100):
-        # Read the image in grayscale
-        img_array = cv2.imread(frame, cv2.IMREAD_GRAYSCALE)
-
-        # Resize the image while maintaining the aspect ratio
-        desired_size = (img_size, img_size)
-        height, width = img_array.shape
-        aspect_ratio = width / height
-
-        if aspect_ratio >= 1:
-            new_width = desired_size[0]
-            new_height = int(new_width / aspect_ratio)
-        else:
-            new_height = desired_size[1]
-            new_width = int(new_height * aspect_ratio)
-
-        resized_image = cv2.resize(img_array, (new_width, new_height))
-
-        # Pad the resized image to make it square (img_size x img_size)
-        pad_width = (desired_size[1] - new_height) // 2
-        pad_height = (desired_size[0] - new_width) // 2
-        padded_image = np.pad(resized_image, ((pad_width, pad_width), (pad_height, pad_height)), mode='constant', constant_values=0)
-
-
-        # Convert the grayscale image to RGB
-        rgb_image = cv2.cvtColor(padded_image, cv2.COLOR_GRAY2RGB)
-        #rgb_image = apply_data_augmentation(rgb_image)
-        return rgb_image
-
+    eye_state_model = load_model('STAGE\PART_2\my_model.keras', compile=False)
+    eye_state_model.compile(loss="binary_crossentropy", optimizer = "adam", metrics = ["accuracy"])
+    
     def get_eye_state(self, frame, landmarks,eye_state_model,preprocess):
         self.keypoints = landmarks
         self.frame = frame
-        # Get the eye regions (ROI) using keypoints similar to the original code
-        left_eye_roi = ...
-        right_eye_roi = ...
+        pts = self.keypoints
 
+        def preprocess(frame,img_size=100):
+        # Read the image in grayscale
+            img_array = cv2.imread(frame, cv2.IMREAD_GRAYSCALE)
+
+            # Resize the image while maintaining the aspect ratio
+            desired_size = (img_size, img_size)
+            height, width = img_array.shape
+            aspect_ratio = width / height
+
+            if aspect_ratio >= 1:
+                new_width = desired_size[0]
+                new_height = int(new_width / aspect_ratio)
+            else:
+                new_height = desired_size[1]
+                new_width = int(new_height * aspect_ratio)
+
+            resized_image = cv2.resize(img_array, (new_width, new_height))
+
+            # Pad the resized image to make it square (img_size x img_size)
+            pad_width = (desired_size[1] - new_height) // 2
+            pad_height = (desired_size[0] - new_width) // 2
+            padded_image = np.pad(resized_image, ((pad_width, pad_width), (pad_height, pad_height)), mode='constant', constant_values=0)
+
+
+            # Convert the grayscale image to RGB
+            rgb_image = cv2.cvtColor(padded_image, cv2.COLOR_GRAY2RGB)
+            #rgb_image = apply_data_augmentation(rgb_image)
+            return rgb_image
+
+
+
+        # Get the eye regions (ROI) using keypoints similar to the original code
+        left_eye_roi = np.zeros(shape=(6, 2))
+        # numpy array for storing the keypoints positions of the right eye
+        right_eye_roi = np.zeros(shape=(6, 2))
+
+        for n in range(36, 42):  # the dlib keypoints from 36 to 42 are referring to the left eye
+            point_l = pts.part(n)  # save the i-keypoint of the left eye
+            point_r = pts.part(n + 6)  # save the i-keypoint of the right eye
+            # array of x,y coordinates for the left eye reference point
+            left_eye_roi[i] = [point_l.x, point_l.y]
+            # array of x,y coordinates for the right eye reference point
+            right_eye_roi[i] = [point_r.x, point_r.y]
+            i += 1  # increasing the auxiliary counter
         # Assuming you have a function to preprocess the ROIs similar to how your model was trained
         preprocessed_left_eye_roi = preprocess(left_eye_roi,img_size=100)
         preprocessed_right_eye_roi = preprocess(right_eye_roi,img_size=100)
