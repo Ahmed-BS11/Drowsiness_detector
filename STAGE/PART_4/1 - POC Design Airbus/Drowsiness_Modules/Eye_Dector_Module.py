@@ -144,6 +144,18 @@ class EyeDetector:
             rgb_image = cv2.cvtColor(padded_image, cv2.COLOR_GRAY2RGB)
             #rgb_image = apply_data_augmentation(rgb_image)
             return rgb_image
+        def detect_face_landmarks(frame, face_detector, landmark_predictor):
+    
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            faces = face_detector(gray_frame)
+            
+            landmarks_list = []
+            for face in faces:
+                landmarks = landmark_predictor(gray_frame, face)
+                landmarks_points = [(landmarks.part(n).x, landmarks.part(n).y) for n in range(68)]
+                landmarks_list.append(landmarks_points)
+            
+            return landmarks_list
         def extract_eyes_from_landmarks(frame, landmarks):
             #if len(landmarks) != 68:
             #   raise ValueError("Facial landmarks should contain 68 points.")

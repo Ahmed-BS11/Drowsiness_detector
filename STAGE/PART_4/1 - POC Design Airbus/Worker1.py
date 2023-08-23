@@ -69,9 +69,10 @@ class Worker1(QThread):
             # take only the bounding box of the biggest face
             faces = sorted(faces, key=get_face_area, reverse=True)
             driver_face = faces[0]
-
+            face_detector = dlib.get_frontal_face_detector()
+            predictor = dlib.shape_predictor(r'C:\Users\ahmed\Desktop\Supcom\stage ingenieur\distraction_detector\STAGE\dlib_shape_predictor\shape_predictor_68_face_landmarks.dat')
             # predict the 68 facial keypoints position
-            landmarks = Predictor(gray, driver_face)
+            landmarks = Eye_det.detect_face_landmarks(frame, face_detector, predictor)
 
             # shows the eye keypoints (can be commented)
             Eye_det.show_eye_keypoints(
