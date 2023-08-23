@@ -58,14 +58,12 @@ class EyeDetector:
         # numpy array for storing the keypoints positions of the right eye
         eye_pts_r = np.zeros(shape=(6, 2))
 
-        for n in range(36, 42):  # the dlib keypoints from 36 to 42 are referring to the left eye
-            point_l = pts.part(n)  # save the i-keypoint of the left eye
-            point_r = pts.part(n + 6)  # save the i-keypoint of the right eye
-            # array of x,y coordinates for the left eye reference point
+        for n in range(36, 42):
+            point_l = pts[n]
+            point_r = pts[n + 6]  # Assuming the right eye keypoints are 6 positions apart from the left eye keypoints
             eye_pts_l[i] = [point_l.x, point_l.y]
-            # array of x,y coordinates for the right eye reference point
             eye_pts_r[i] = [point_r.x, point_r.y]
-            i += 1  # increasing the auxiliary counter
+            i += 1
 
         def EAR_eye(eye_pts):
             """
@@ -106,11 +104,26 @@ class EyeDetector:
         self.keypoints = landmarks
 
         for n in range(36, 48):
-            x = self.keypoints.part(n).x
-            y = self.keypoints.part(n).y
-            cv2.circle(color_frame, (x, y), 1, (0, 0, 255), -1)
+            keypoint = self.keypoints[n]
+            x = keypoint[0]
+            y = keypoint[1]
+            cv2.circle(color_frame, (x, y), radius=1, color=(0, 0, 255), thickness=-1)
         return
-    
+    def detect_face_landmarks(self,frame, face_detector, landmark_predictor):
+        self.frame=frame
+        self.face_detector=face_detector
+        self.landmark_predictor=landmark_predictor
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        faces = face_detector(gray_frame)
+        
+        landmarks_list = []
+        for face in faces:
+            landmarks = landmark_predictor(gray_frame, face)
+            landmarks_points = [(landmarks.part(n).x, landmarks.part(n).y) for n in range(68)]
+            landmarks_list.append(landmarks_points)
+        
+        return landmarks_list
+
     def get_eye_state(self, frame, landmarks,eye_state_model):
         self.keypoints = landmarks
         self.frame = frame
@@ -144,18 +157,8 @@ class EyeDetector:
             rgb_image = cv2.cvtColor(padded_image, cv2.COLOR_GRAY2RGB)
             #rgb_image = apply_data_augmentation(rgb_image)
             return rgb_image
-        def detect_face_landmarks(frame, face_detector, landmark_predictor):
-    
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            faces = face_detector(gray_frame)
-            
-            landmarks_list = []
-            for face in faces:
-                landmarks = landmark_predictor(gray_frame, face)
-                landmarks_points = [(landmarks.part(n).x, landmarks.part(n).y) for n in range(68)]
-                landmarks_list.append(landmarks_points)
-            
-            return landmarks_list
+        
+        
         def extract_eyes_from_landmarks(frame, landmarks):
             #if len(landmarks) != 68:
             #   raise ValueError("Facial landmarks should contain 68 points.")
