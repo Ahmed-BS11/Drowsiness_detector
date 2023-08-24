@@ -118,7 +118,8 @@ class EyeDetector:
 
         def preprocess(frame,img_size=100):
         # Read the image in grayscale
-            img_array = cv2.imread(frame, cv2.IMREAD_GRAYSCALE)
+            #gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            img_array = np.array(frame)
 
             # Resize the image while maintaining the aspect ratio
             desired_size = (img_size, img_size)
@@ -153,8 +154,9 @@ class EyeDetector:
             right_eye_indices = [i for i in range(42, 48)]
 
             # Extract left and right eye regions from the frame.
-            left_eye_coords = np.array([landmarks[i] for i in left_eye_indices], dtype=np.int32)
-            right_eye_coords = np.array([landmarks[i] for i in right_eye_indices], dtype=np.int32)
+            left_eye_coords = np.array([(landmarks.part(i).x, landmarks.part(i).y) for i in left_eye_indices], dtype=np.int32)
+            right_eye_coords = np.array([(landmarks.part(i).x, landmarks.part(i).y) for i in right_eye_indices], dtype=np.int32)
+
 
             # Calculate the bounding boxes for the left and right eye regions.
             left_eye_x = np.min(left_eye_coords[:, 0])
