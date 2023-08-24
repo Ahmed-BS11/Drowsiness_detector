@@ -118,12 +118,11 @@ class EyeDetector:
 
         def preprocess(frame,img_size=100):
         # Read the image in grayscale
-            #gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            img_array = np.array(frame)
+            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-            # Resize the image while maintaining the aspect ratio
+            # Resize the frame while maintaining the aspect ratio
             desired_size = (img_size, img_size)
-            height, width = img_array.shape
+            height, width = gray_frame.shape
             aspect_ratio = width / height
 
             if aspect_ratio >= 1:
@@ -133,18 +132,18 @@ class EyeDetector:
                 new_height = desired_size[1]
                 new_width = int(new_height * aspect_ratio)
 
-            resized_image = cv2.resize(img_array, (new_width, new_height))
+            resized_frame = cv2.resize(gray_frame, (new_width, new_height))
 
-            # Pad the resized image to make it square (img_size x img_size)
+            # Pad the resized frame to make it square (img_size x img_size)
             pad_width = (desired_size[1] - new_height) // 2
             pad_height = (desired_size[0] - new_width) // 2
-            padded_image = np.pad(resized_image, ((pad_width, pad_width), (pad_height, pad_height)), mode='constant', constant_values=0)
+            padded_frame = np.pad(resized_frame, ((pad_width, pad_width), (pad_height, pad_height)), mode='constant', constant_values=0)
 
+            # Convert the grayscale frame to RGB
+            rgb_frame = cv2.cvtColor(padded_frame, cv2.COLOR_GRAY2RGB)
 
-            # Convert the grayscale image to RGB
-            rgb_image = cv2.cvtColor(padded_image, cv2.COLOR_GRAY2RGB)
-            #rgb_image = apply_data_augmentation(rgb_image)
-            return rgb_image
+            return rgb_frame
+
         def extract_eyes_from_landmarks(frame, landmarks):
             #if len(landmarks) != 68:
             #   raise ValueError("Facial landmarks should contain 68 points.")
