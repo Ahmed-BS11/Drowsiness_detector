@@ -100,9 +100,22 @@ class Worker1(QThread):
 
             # show the real-time EAR score
             if ear is not None:
-                cv2.putText(frame, "left eye proba:" + str(l_p), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
-                cv2.putText(frame, "left eye proba:" + str(r_p), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
-                
+                left_text = "Left Eye Probabilities:"
+                cv2.putText(frame, left_text, (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+
+                for i, prob in enumerate(l_p):
+                    text = f"Class {i}: {prob:.3f}"
+                    y_pos = 40 + i * 20
+                    cv2.putText(frame, text, (5, y_pos), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+
+                # Display right eye probabilities
+                right_text = "Right Eye Probabilities:"
+                cv2.putText(frame, right_text, (5, 100), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+
+                for i, prob in enumerate(r_p):
+                    text = f"Class {i}: {prob:.3f}"
+                    y_pos = 120 + i * 20
+                    cv2.putText(frame, text, (5, y_pos), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)   
             if (state=='closed'):
                 self.counter_closed+=1
                 self.counter_open=0
