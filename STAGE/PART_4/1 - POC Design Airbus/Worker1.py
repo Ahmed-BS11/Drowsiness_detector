@@ -100,9 +100,8 @@ class Worker1(QThread):
 
             # show the real-time EAR score
             if ear is not None:
-                cv2.putText(frame, "left eye proba:" + str([round(p, 3) for p in l_p]), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
-                cv2.putText(frame, "left eye proba:" + str([round(p, 3) for p in r_p]), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
-
+                cv2.putText(frame, "left eye proba:" + str(l_p), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+                cv2.putText(frame, "left eye proba:" + str(r_p), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
                 
             if (state=='closed'):
                 self.counter_closed+=1
