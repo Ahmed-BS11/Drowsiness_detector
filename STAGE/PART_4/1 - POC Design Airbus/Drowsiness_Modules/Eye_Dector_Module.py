@@ -118,11 +118,9 @@ class EyeDetector:
 
         def preprocess(frame,img_size=100):
         # Read the image in grayscale
-            gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-            # Resize the frame while maintaining the aspect ratio
+                # Resize the image while maintaining the aspect ratio
             desired_size = (img_size, img_size)
-            height, width = gray_frame.shape
+            height, width = frame.shape
             aspect_ratio = width / height
 
             if aspect_ratio >= 1:
@@ -132,17 +130,17 @@ class EyeDetector:
                 new_height = desired_size[1]
                 new_width = int(new_height * aspect_ratio)
 
-            resized_frame = cv2.resize(gray_frame, (new_width, new_height))
+            resized_image = cv2.resize(frame, (new_width, new_height))
 
-            # Pad the resized frame to make it square (img_size x img_size)
+            # Pad the resized image to make it square (img_size x img_size)
             pad_width = (desired_size[1] - new_height) // 2
             pad_height = (desired_size[0] - new_width) // 2
-            padded_frame = np.pad(resized_frame, ((pad_width, pad_width), (pad_height, pad_height)), mode='constant', constant_values=0)
+            padded_image = np.pad(resized_image, ((pad_width, pad_width), (pad_height, pad_height)), mode='constant', constant_values=0)
 
-            # Convert the grayscale frame to RGB
-            rgb_frame = cv2.cvtColor(padded_frame, cv2.COLOR_GRAY2RGB)
+            # Convert the grayscale image to RGB
+            rgb_image = cv2.cvtColor(padded_image, cv2.COLOR_GRAY2RGB)
 
-            return rgb_frame
+            return rgb_image
 
         def extract_eyes_from_landmarks(frame, landmarks):
             #if len(landmarks) != 68:
@@ -195,12 +193,13 @@ class EyeDetector:
 
         eyes = extract_eyes_from_landmarks(frame, landmarks)  # Considering the first detected face
         left_eye_roi, right_eye_roi = eyes[0], eyes[1]
+        print(left_eye_roi.shape)
         preprocessed_left_eye_roi = preprocess(left_eye_roi,img_size=100)
         preprocessed_right_eye_roi = preprocess(right_eye_roi,img_size=100)
-
+        print(preprocessed_left_eye_roi.shape)
         # Make predictions using your pre-trained model
-        left_eye_prediction = eye_state_model.predict(preprocessed_left_eye_roi)
-        right_eye_prediction = eye_state_model.predict(preprocessed_right_eye_roi)
+        left_eye_prediction = eye_state_model.predict(np.expand_dims(preprocessed_left_eye_roi, axis=0))
+        right_eye_prediction = eye_state_model.predict(np.expand_dims(preprocessed_right_eye_roi, axis=0))
 
         # Interpret predictions to determine eye state
         if left_eye_prediction > 0.5 and right_eye_prediction > 0.5:

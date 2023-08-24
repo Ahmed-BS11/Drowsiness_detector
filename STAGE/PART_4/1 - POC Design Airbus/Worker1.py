@@ -35,8 +35,9 @@ class Worker1(QThread):
 
     def Drowsiness(self, frame, Predictor, Eye_det, Scorer, Detector, Head_pose):
         frame = cv2.resize(frame, (0,0), fx=0.5, fy=0.5)
-        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-        gray = cv2.bilateralFilter(gray, 5, 10, 10)
+        #gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        #gray = cv2.bilateralFilter(gray, 5, 10, 10)
+        gray=frame
         faces = Detector(gray)
         if len(faces) > 0:  # process the frame only if at least a face is found
 
@@ -99,8 +100,9 @@ class Worker1(QThread):
 
             # show the real-time EAR score
             if ear is not None:
-                cv2.putText(frame, "left eye proba:" + str(round(l_p, 3)), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
-                cv2.putText(frame, "right eye proba:" + str(round(r_p, 3)), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+                cv2.putText(frame, "left eye proba:" + str([round(p, 3) for p in l_p]), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+                cv2.putText(frame, "left eye proba:" + str([round(p, 3) for p in r_p]), (5, 20), cv2.FONT_HERSHEY_COMPLEX_SMALL, 0.7, (50, 173, 176), 1, cv2.LINE_AA)
+
                 
             if (state=='closed'):
                 self.counter_closed+=1
